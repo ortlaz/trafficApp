@@ -2,13 +2,18 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.authtoken.admin import User
 
-from traffic.app.models import Location
+from traffic.app.models import Location, Status, Camera, Report
 
 
 class UserSerializer(serializers.ModelSerializer):
+    contract_number = serializers.SerializerMethodField(read_only=True)
+
+    def get_contract_number(self, obj):
+        return f"Д000{obj.id}"
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name']
+        fields = ['id', 'email', 'first_name', 'contract_number']
 
 
 class LoginSerializer(serializers.Serializer):
@@ -52,9 +57,68 @@ class LoginSerializer(serializers.Serializer):
         return attrs
 
 
+class StatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Status
+        fields = "__all__"
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    video_path = serializers.CharField(source='videofile.file', read_only=True)
+    status = StatusSerializer(read_only=True)
+
+    class Meta:
+        model = Report
+        fields = ("video_path", "date", "status")
+
+
 class LocationsListSerializers(serializers.ModelSerializer):
     """Сериализатор списка локаций"""
+    user = UserSerializer(read_only=True)
+    contract_number = serializers.SerializerMethodField(read_only=True)
+    status = StatusSerializer(read_only=True)
+
+    def get_contract_number(self, obj):
+        return f"Д000{obj.user.id}"
 
     class Meta:
         model = Location
-        fields = '__all__'
+        fields = ("id", "user", "contract_number", "address", "status")
+
+
+class CameraSelectListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Camera
+        fields = ("id", "name",)
+
+
+class LocationsSerializers(LocationsListSerializers):
+    """Сериализатор локации"""
+    user = UserSerializer(read_only=True)
+    user_id = serializers.CharField(source='user.id')
+    status = StatusSerializer(read_only=True)
+    location_report = ReportSerializer(many=True, read_only=True)
+    location_camera = CameraSelectListSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Location
+        fields = (
+            "user_id",
+            "user",
+            "contract_number",
+            "address",
+            "status",
+            "location_report",
+            "location_camera"
+        )
+
+
+class ContractSerializer(serializers.ModelSerializer):
+    contract_number = serializers.SerializerMethodField(read_only=True)
+
+    def get_contract_number(self, obj):
+        return f"Д000{obj.id}"
+
+    class Meta:
+        model = User
+        fields = ("id", "first_name", "contract_number")

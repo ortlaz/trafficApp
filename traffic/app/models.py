@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from rest_framework.authtoken.admin import User
 
 from traffic.app.utils import get_file_path
 
@@ -22,28 +23,28 @@ class UserGroupConst:
     CLIENT = "CLIENT"
 
 
-class User(models.Model):
-    """Пользователь"""
-
-    name = models.CharField("ФИО", max_length=100, blank=True)
-    group = models.ForeignKey(
-        "UserGroup",
-        on_delete=models.PROTECT,
-        related_name="user",
-    )
-    email = models.EmailField(unique=True)
-    password = models.CharField("Пароль", max_length=100, blank=True)
-    created_date = models.DateTimeField("Дата регистрации", default=timezone.now)
-    last_login = models.DateTimeField("Дата последней авторизации", blank=True, null=True)
-    contract_number = models.CharField('Номер договора', max_length=100, blank=True)
-    mobile_phone = models.CharField("Телефон", max_length=20, blank=True, null=True)
-
-    class Meta:
-        verbose_name = "Пользователь"
-        verbose_name_plural = "Пользователи"
-
-    def __str__(self):
-        return "{}".format(self.email)
+# class User(models.Model):
+#     """Пользователь"""
+#
+#     name = models.CharField("ФИО", max_length=100, blank=True)
+#     group = models.ForeignKey(
+#         "UserGroup",
+#         on_delete=models.PROTECT,
+#         related_name="user",
+#     )
+#     email = models.EmailField(unique=True)
+#     password = models.CharField("Пароль", max_length=100, blank=True)
+#     created_date = models.DateTimeField("Дата регистрации", default=timezone.now)
+#     last_login = models.DateTimeField("Дата последней авторизации", blank=True, null=True)
+#     contract_number = models.CharField('Номер договора', max_length=100, blank=True)
+#     mobile_phone = models.CharField("Телефон", max_length=20, blank=True, null=True)
+#
+#     class Meta:
+#         verbose_name = "Пользователь"
+#         verbose_name_plural = "Пользователи"
+#
+#     def __str__(self):
+#         return "{}".format(self.email)
 
 
 class UserFiles(models.Model):
@@ -57,7 +58,7 @@ class UserFiles(models.Model):
     )
     name = models.CharField("Название файла", max_length=300, blank=True, null=True)
     user = models.ForeignKey(
-        "User",
+        User,
         on_delete=models.PROTECT,
         related_name="user_files",
     )
@@ -69,6 +70,14 @@ class UserFiles(models.Model):
         null=True,
     )
     created_date = models.DateTimeField("Дата загрузки файла", default=timezone.now)
+    status = models.ForeignKey(
+        "Status",
+        verbose_name='Статус',
+        on_delete=models.PROTECT,
+        related_name="user_file_admin",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
         verbose_name = "Пользовательский файл"
@@ -99,6 +108,29 @@ class FileTypeConst:
     AVERAGE_TRAFFIC_GRAPH = "average_traffic_graph"
 
 
+class StatusConst:
+    DRAFT = 'Черновик'
+    APPROVED = 'Подтверждена'
+    NO_VIDEO = 'Требуется загрузка видео'
+    UPLOADED = 'Загружено'
+
+
+class Status(models.Model):
+    """(Справочник) Статусы"""
+    name = models.CharField(
+        blank=True,
+        null=True,
+        max_length=20
+    )
+
+    class Meta:
+        verbose_name = "(Справочник) Статусы"
+        verbose_name_plural = "(Справочник) Статусы"
+
+    def __str__(self):
+        return "{}".format(self.name)
+
+
 class Location(models.Model):
     """Локация, на которой подсчитывается трафик"""
 
@@ -119,6 +151,14 @@ class Location(models.Model):
     admin = models.ForeignKey(
         User,
         verbose_name='Администратор',
+        on_delete=models.PROTECT,
+        related_name="location_admin",
+        blank=True,
+        null=True,
+    )
+    status = models.ForeignKey(
+        Status,
+        verbose_name='Статус',
         on_delete=models.PROTECT,
         related_name="location_admin",
         blank=True,
@@ -171,14 +211,9 @@ class Camera(models.Model):
 class Report(models.Model):
     """Отчёт по анализу трафика"""
 
-    start_date = models.DateTimeField(
-        "Начало периода подсчёта",
+    date = models.DateTimeField(
+        "Дата подсчёта",
         default=timezone.now
-    )
-    end_date = models.DateTimeField(
-        "Конец периода подсчёта",
-        null=True,
-        blank=True
     )
     location = models.ForeignKey(
         Location,
@@ -190,6 +225,14 @@ class Report(models.Model):
     )
     model_report = models.TextField(
         verbose_name='JSON данные',
+        blank=True,
+        null=True,
+    )
+    videofile = models.ForeignKey(
+        UserFiles,
+        verbose_name='Видеофайл',
+        on_delete=models.PROTECT,
+        related_name="location_video",
         blank=True,
         null=True,
     )

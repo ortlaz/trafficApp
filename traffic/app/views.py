@@ -1,13 +1,15 @@
 from django.contrib.auth import login
 from rest_framework import status, permissions
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
+from rest_framework.authtoken.admin import User
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from traffic.app.models import Location
-from traffic.app.serializers import LocationsListSerializers, LoginSerializer, UserSerializer
+from traffic.app.models import Location, Camera
+from traffic.app.serializers import LocationsListSerializers, LoginSerializer, UserSerializer, ContractSerializer, \
+    CameraSelectListSerializer, LocationsSerializers
 
 
 # Users
@@ -35,6 +37,13 @@ class UserView(APIView):
         return Response({'user': serializer.data}, status=status.HTTP_200_OK)
 
 
+class ContractList(ListAPIView):
+    serializer_class = ContractSerializer
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = (IsAuthenticated,)
+    queryset = User.objects.all()
+
+
 # __________________________________________________________________________________
 
 # Locations
@@ -49,6 +58,14 @@ class LocationsListView(ListCreateAPIView):
 
 class LocationsView(RetrieveUpdateAPIView):
     """Просмотр и обновление локации"""
-    serializer_class = LocationsListSerializers
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = (IsAuthenticated,)
+    serializer_class = LocationsSerializers
     queryset = Location.objects.all()
-    permission_classes = []
+
+
+class CameraSelectList(ListAPIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = (IsAuthenticated,)
+    serializer_class = CameraSelectListSerializer
+    queryset = Camera.objects.all()
