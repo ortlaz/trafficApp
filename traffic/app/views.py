@@ -7,9 +7,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from traffic.app.models import Location, Camera
+from traffic.app.models import Location, Camera, Report
 from traffic.app.serializers import LocationsListSerializers, LoginSerializer, UserSerializer, ContractSerializer, \
-    CameraSelectListSerializer, LocationsSerializers
+    CameraSelectListSerializer, LocationsSerializers, ReportSerializer, ReportUploadSerializer
 
 
 # Users
@@ -64,8 +64,25 @@ class LocationsView(RetrieveUpdateAPIView):
     queryset = Location.objects.all()
 
 
+class LocationReportView(ListAPIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ReportSerializer
+
+    def get_queryset(self):
+        location_id = self.kwargs.get('pk')
+        return Report.objects.filter(location_id=location_id)
+
+
 class CameraSelectList(ListAPIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = (IsAuthenticated,)
     serializer_class = CameraSelectListSerializer
     queryset = Camera.objects.all()
+
+
+class ReportCreateView(ListCreateAPIView):
+    serializer_class = ReportUploadSerializer
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = (IsAuthenticated,)
+    queryset = Report.objects.all()

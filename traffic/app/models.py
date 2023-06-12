@@ -236,6 +236,14 @@ class Report(models.Model):
         blank=True,
         null=True,
     )
+    status = models.ForeignKey(
+        Status,
+        verbose_name='Статус',
+        on_delete=models.PROTECT,
+        related_name="report_status",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
         verbose_name = "Отчёт по анализу трафика"

@@ -1,4 +1,4 @@
-def get_file_path(file, filename, file_type):
+def get_file_path(file, filename, file_type='UPLOAD_VIDEO'):
     """Возвращает путь до файлов."""
     if file_type in [
         "day_traffic_graph",

@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.authtoken.admin import User
 
-from traffic.app.models import Location, Status, Camera, Report
+from traffic.app.models import Location, Status, Camera, Report, UserFiles
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -72,6 +72,25 @@ class ReportSerializer(serializers.ModelSerializer):
         fields = ("video_path", "date", "status")
 
 
+class ReportUploadSerializer(serializers.ModelSerializer):
+    # video_path = serializers.FileField()
+    date = serializers.CharField()
+
+    def create(self, validated_data):
+        video_path = self.initial_data.get('video_file')
+        uf_id = UserFiles.objects.all().order_by('-id').first().id + 1
+        rep_id = Report.objects.all().order_by('-id').first().id + 1
+        uf = UserFiles.objects.create(id=uf_id, file=video_path, name='Видео', user_id='1', status_id='4', type_id='1')
+        instance = Report.objects.create(id=rep_id, location_id='2', model_report='{}', status_id='4', videofile=uf)
+        return instance
+
+    class Meta:
+        model = Report
+        fields = (
+            # "video_path",
+            "date", "status")
+
+
 class LocationsListSerializers(serializers.ModelSerializer):
     """Сериализатор списка локаций"""
     user = UserSerializer(read_only=True)
@@ -95,10 +114,19 @@ class CameraSelectListSerializer(serializers.ModelSerializer):
 class LocationsSerializers(LocationsListSerializers):
     """Сериализатор локации"""
     user = UserSerializer(read_only=True)
-    user_id = serializers.CharField(source='user.id')
-    status = StatusSerializer(read_only=True)
-    location_report = ReportSerializer(many=True, read_only=True)
+    user_id = serializers.CharField(source='user.id', read_only=True)
+    status = StatusSerializer(read_only=True, )
     location_camera = CameraSelectListSerializer(many=True, read_only=True)
+    location_report = ReportSerializer(many=True, read_only=True)
+
+    def update(self, instance, validated_data):
+        data = self.initial_data
+        for camera_id in data['location_camera']:
+            camera = Camera.objects.get(name=camera_id)
+            instance.location_camera.add(camera)
+        instance.status_id = '2'
+        instance.save()
+        return instance
 
     class Meta:
         model = Location
@@ -108,8 +136,8 @@ class LocationsSerializers(LocationsListSerializers):
             "contract_number",
             "address",
             "status",
-            "location_report",
-            "location_camera"
+            "location_camera",
+            "location_report"
         )
 
 
