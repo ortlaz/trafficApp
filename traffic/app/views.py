@@ -1,4 +1,4 @@
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from rest_framework import status, permissions
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.authtoken.admin import User
@@ -25,6 +25,14 @@ class LoginView(APIView):
         user = serializer.validated_data['user']
         login(request, user)
         return Response(None, status=status.HTTP_202_ACCEPTED)
+
+
+class LogoutView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        logout(request)
+        return Response(status=status.HTTP_200_OK)
 
 
 class UserView(APIView):
